@@ -16,30 +16,33 @@ def search_movies(searchterm: str) -> list:
     # Search for movies on the Internet Movie Database (IMDb)
     return []
 
-imdb_id= 'tt0113497'
-movies_imdb = ['tt0113497', 'tt0113228', 'tt0114885', 'tt0113041']
+# imdb_id= 'tt0113497'
+# movies_imdb = ['tt0113497', 'tt0113228', 'tt0114885', 'tt0113041']
+
+tmdb_ids = ['8844', '15602','31357', '11862']
 
 
-def fetch_from_tmdb(imdb_id):
+def fetch_from_tmdb(movie_id):
     # tmdb path to search movie by imdb id
-    url = f"https://api.themoviedb.org/3/find/{imdb_id}?external_source=imdb_id"
+    # url = f"https://api.themoviedb.org/3/find/{imdb_id}?external_source=imdb_id"
+    # poster_url = f"https://api.themoviedb.org/3/movie/{movie_id}/images"
+    movie_url = f"https://api.themoviedb.org/3/movie/{movie_id}"
 
     headers = {
         "accept": "application/json",
         "Authorization": "Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI0MzFhOGJjM2E4MjU1MTJjODIwNDkwZDFjYmE5MzVlNiIsIm5iZiI6MTc0NTIxMjU4MC4zMTIsInN1YiI6IjY4MDVkNGE0YzVjODAzNWZiMDhhMDcyMyIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.CaQ8Fz7c1aTSbzaOjK4eqFsFOqM9oxkPNQ9W303Z5vA"
     }
 
-    response = requests.get(url, headers=headers)
+    response = requests.get(movie_url, headers=headers)
     if response.status_code != 200:
         st.error(f"TMDb API error: {response.status_code}")
         return Movie()
 
-    results = response.json().get("movie_results", [])
-    if not results:
-        st.warning("No movie found for that IMDb ID.")
+    movie_data = response.json()
+    if not movie_data:
+        st.warning("No movie found for that ID.")
         return Movie()
-    
-    movie_data = results[0]
+
     title = movie_data.get("title", "Unknown Title")
     overview = movie_data.get("overview", "No overview available.")
     poster_path = movie_data.get("poster_path")
@@ -67,7 +70,7 @@ if selected_value:
 st.markdown("### 🎬 Recommended movies")
 
 recommendations = []
-for movie_id in movies_imdb:
+for movie_id in tmdb_ids:
     recommendations.append(fetch_from_tmdb(movie_id))
 
 # movie = fetch_from_tmdb(imdb_id)
