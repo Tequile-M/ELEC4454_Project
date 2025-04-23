@@ -3,7 +3,8 @@ import requests
 from dataclasses import dataclass
 import streamlit.components.v1 as components
 from streamlit_searchbox import st_searchbox
-from main_test import get_movies
+from run_recommender import get_rec_ids
+import pickle
 
 # --- Define the Movie data class ---
 @dataclass
@@ -17,9 +18,11 @@ class Movie:
 # imdb_id= 'tt0113497'
 # movies_imdb = ['tt0113497', 'tt0113228', 'tt0114885', 'tt0113041']
 
-tmdb_ids = ['8844', '15602','31357', '11862']
+tmdb_ids = []
 
-
+#
+# GET MOVIE DETAILS AFTER GETTING RECS
+# 
 def fetch_from_tmdb(movie_id):
     # tmdb path to search movie by imdb id
     # url = f"https://api.themoviedb.org/3/find/{imdb_id}?external_source=imdb_id"
@@ -51,7 +54,10 @@ def fetch_from_tmdb(movie_id):
 
 st.set_page_config(layout="wide")
 
-all_movies = get_movies()
+all_movies = []
+
+with open("movies_list.pkl", "rb") as f:
+    all_movies = pickle.load(f)
 
 def search_movies(searchterm: str) -> list[str]:
     # Simulate a movie search
@@ -59,11 +65,13 @@ def search_movies(searchterm: str) -> list[str]:
 
 selected_value = st_searchbox(
     search_movies,
-    placeholder="Search by title",
+    placeholder="Search movie by title",
     key="searchbox",
 )
+
 if selected_value:
-    st.success(f"You selected: {selected_value}")
+    # st.success(f"You selected: {selected_value}")
+    tmdb_ids = get_rec_ids(selected_value)
 
     
 st.markdown("### 🎬 Recommended movies")
@@ -72,7 +80,9 @@ recommendations = []
 for movie_id in tmdb_ids:
     recommendations.append(fetch_from_tmdb(movie_id))
 
-# movie = fetch_from_tmdb(imdb_id)
+# 
+# MOVIE CARD STYLING
+# 
 cards_html = ""
 for rec in recommendations:
     cards_html += f"""
@@ -92,6 +102,9 @@ for rec in recommendations:
     """
 
 
+# 
+# PAGE STYLING
+# 
 # HTML + CSS + JS flip card
 components.html(f"""
     <html>
@@ -175,4 +188,4 @@ components.html(f"""
         </div>      
     </body>
     </html>
-""", height=1000)
+""", height=1500)
