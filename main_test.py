@@ -46,6 +46,7 @@ def load_data():
   movies_small = movies[movies['id'].isin(links_small)]
   return movies_small
 
+movies_small = load_data()
 
 # get director name from crew data
 def extract_director(obj):
@@ -60,7 +61,7 @@ def create_metadata(x):
     return ' '.join(x['keywords']) + ' ' + ' '.join(x['cast']) + ' ' + x['director'] + ' ' + ' '.join(x['genres'])
 
 
-def preprocess_data(movies_small):
+def preprocess_data():
   movies_small['tagline'] = movies_small['tagline'].fillna('')
   movies_small['description'] = movies_small['overview'] + movies_small['tagline']
   movies_small['description'] = movies_small['description'].fillna('')
@@ -114,11 +115,11 @@ def preprocess_data(movies_small):
 
   movies_small = movies_small.reset_index(drop=True)
   indices = pd.Series(movies_small.index, index=movies_small['title']).drop_duplicates()
-  return movies_small, cosine_sim, indices
+  return cosine_sim, indices
 
 
 # Function that takes in movie title as input and outputs most similar movies
-def get_recommendations(title, cosine_sim, movies_small, indices):
+def get_recommendations(title, cosine_sim, indices):
     # Get the index of the movie that matches the title
     idx = indices[title]
 
@@ -144,9 +145,8 @@ def get_movies():
   return movies_small['title'].tolist()
 
 if __name__ == "__main__":
-  ms = load_data()
-  ms, cosine, indices = preprocess_data(ms)
+  cosine, indices = preprocess_data()
   title = "Harry Potter and the Philosopher's Stone"
-  recs = get_recommendations(title, cosine, ms, indices)
+  recs = get_recommendations(title, cosine, indices)
   print(recs)
 
