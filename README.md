@@ -18,4 +18,7 @@ run "streamlit run app.py"
 open link that it provides
 
 # demo
-<video controls src="Recording.mp4" title="Title"></video>
+
+
+https://github.com/user-attachments/assets/74c21083-cc39-48a7-b675-95492522e44a
+
