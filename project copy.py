@@ -10,74 +10,62 @@ from sklearn.metrics.pairwise import linear_kernel
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 
 from nltk.stem.snowball import SnowballStemmer
+import opendatasets as od
+
+# get dataset from kaggle
+od.download("https://www.kaggle.com/datasets/rounakbanik/the-movies-dataset/data?select=movies_metadata.csv", force=True)
 
 
-print("TESTSSSSSSSSSSSSSS")
-
-
-
-# #specify which fields in the movies database to keep (we don't need all of them)
-# fields = ['title','id', 'genres', 'original_language', 'overview']
-
-
-# movies = pd.read_csv('movies_metadata.csv', usecols=fields)
-movies = pd.read_csv('movies_metadata.csv')
+# specify which fields in the movies database to keep 
+fields = ['title','id', 'genres', 'original_language', 'overview', 'tagline']
+movies = pd.read_csv('movies_metadata.csv', usecols=fields)
 
 
 # drop columns where the id is not a proper number
 movies = movies.drop(movies[(movies['id'] == '1997-08-20') | (movies['id'] == '2012-09-29') | (movies['id'] == '2014-01-01')].index)
 
 movies['id'] = movies['id'].astype('int')
-print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
 
 credits = pd.read_csv('credits.csv')
 keywords = pd.read_csv('keywords.csv')
 
-links_small = pd.read_csv('links_small.csv')
-links_small = links_small[links_small['tmdbId'].notnull()]['tmdbId'].astype('int')
+# # get associated tmdbId for each movie
+# links_small = pd.read_csv('links_small.csv')
+# links_small = links_small[links_small['tmdbId'].notnull()]['tmdbId'].astype('int')
 
-movies.shape
+# movies['id'] = pd.to_numeric(movies['id'])
+# keywords['id'] = keywords['id'].astype('int')
+# credits['id'] = credits['id'].astype('int')
 
-keywords['id'] = keywords['id'].astype('int')
-credits['id'] = credits['id'].astype('int')
-
+# merge movies database with credits and keywords 
 movies = movies.merge(credits, on='id')
 movies = movies.merge(keywords, on='id')
 
 print("###############################")
 
-smovies = movies[movies['id'].isin(links_small)]
-smovies.shape
 
-print(smovies.head(5))
+movies_small = movies[movies['id'].isin(links_small)]
 
 print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
-# movies= keywords.merge(keywords,on='id')
-# print("###############################")
 
-smovies.info()
+# movies_small.info()
 
-smovies['tagline'] = smovies['tagline'].fillna('')
-smovies['description'] = smovies['overview'] + smovies['tagline']
-smovies['description'] = smovies['description'].fillna('')
-smovies['genres'] = smovies['genres'].fillna('[]').apply(literal_eval).apply(lambda x: [i['name'] for i in x] if isinstance(x, list) else [])
+movies_small['tagline'] = movies_small['tagline'].fillna('')
+movies_small['description'] = movies_small['overview'] + movies_small['tagline']
+movies_small['description'] = movies_small['description'].fillna('')
+movies_small['genres'] = movies_small['genres'].fillna('[]').apply(literal_eval).apply(lambda x: [i['name'] for i in x] if isinstance(x, list) else [])
 
 
 #Define a TF-IDF Vectorizer Object. Remove all english stop words such as 'the', 'a'
 """
-analyzer='word':It analyzes text at the word level, meaning it tokenizes the text by words (as opposed to characters).
-ngram_range=(1, 2):This captures unigrams (1-word tokens) and bigrams (2-word tokens).
+analyzer='word': analyzes text at the word level; tokenizes the text by words).
+ngram_range=(1, 2):captures unigrams (1-word tokens) and bigrams (2-word tokens).
 Example: "space battle" → tokens = ["space", "battle", "space battle"]
-This helps capture context like "New York" or "space station".
 """
 tfidf = TfidfVectorizer(analyzer='word', ngram_range=(1, 2), stop_words='english')
 
-#Replace NaN with an empty string
-#smovies['overview'] = smovies['overview'].fillna('')
-
-
 #Construct the required TF-IDF matrix by fitting and transforming the data
-tfidf_matrix = tfidf.fit_transform(smovies['description'])
+tfidf_matrix = tfidf.fit_transform(movies_small['description'])
 
 #Output the shape of tfidf_matrix
 tfidf_matrix.shape
@@ -85,59 +73,70 @@ tfidf_matrix.shape
 
 print("NEWNEWNEWNEWNEWNEWNEWNWENWENWENWENWENWENWENWENWENWENWENWEN")
 
-smovies['cast'] = smovies['cast'].apply(literal_eval)
-smovies['crew'] = smovies['crew'].apply(literal_eval)
-smovies['keywords'] = smovies['keywords'].apply(literal_eval)
-smovies['cast_size'] = smovies['cast'].apply(lambda x: len(x))
-smovies['crew_size'] = smovies['crew'].apply(lambda x: len(x))
+movies_small['cast'] = movies_small['cast'].apply(literal_eval)
+movies_small['crew'] = movies_small['crew'].apply(literal_eval)
+movies_small['keywords'] = movies_small['keywords'].apply(literal_eval)
+movies_small['cast_size'] = movies_small['cast'].apply(lambda x: len(x))
+movies_small['crew_size'] = movies_small['crew'].apply(lambda x: len(x))
 
-def get_director(x):
-    for i in x:
-        if i['job'] == 'Director':
-            return i['name']
-    return np.nan
+# get director name from crew data
+def extract_director(obj):
+  return [i['name'] for i in literal_eval(obj) if i['job'] == 'Director']
 
-smovies['director'] = smovies['crew'].apply(get_director)
-smovies['cast'] = smovies['cast'].apply(lambda x: [i['name'] for i in x] if isinstance(x, list) else [])
-smovies['cast'] = smovies['cast'].apply(lambda x: x[:3] if len(x) >=3 else x)
-smovies['keywords'] = smovies['keywords'].apply(lambda x: [i['name'] for i in x] if isinstance(x, list) else [])
+# get desired feat(ure) from obj
+def extract(obj, feat):
+  return [i[feat] for i in literal_eval(obj)]
 
-smovies['cast'] = smovies['cast'].apply(lambda x: [str.lower(i.replace(" ", "")) for i in x])
-smovies['director'] = smovies['director'].astype('str').apply(lambda x: str.lower(x.replace(" ", "")))
-smovies['director'] = smovies['director'].apply(lambda x: [x,x, x])
+movies_small['director'] = movies_small['crew'].apply(extract_director)
+# extract cast member names and limit to 5
+movies_small['cast'] = movies_small['cast'].apply(lambda x: extract(x, 'name')[:5])
+# extract keywords from database
+movies_small['keywords'] = movies_small['keywords'].apply(lambda x: extract(x, 'name'))
+
+# normalize cast and crew names, lowercase + remove all spaces
+movies_small['cast'] = movies_small['cast'].apply(lambda x: [str.lower(i.replace(" ", "")) for i in x])
+movies_small['director'] = movies_small['director'].astype('str').apply(lambda x: str.lower(x.replace(" ", "")))
+# give more weight to the director than later content-based recs
+# movies_small['director'] = movies_small['director'].apply(lambda x: [x,x, x])
 
 print("MAMAMAMAMAMAMAMAMAAMAMAMAMAMAMAAM")
 
-s = smovies.apply(lambda x: pd.Series(x['keywords']),axis=1).stack().reset_index(level=1, drop=True)
-s.name = 'keyword'
-s = s.value_counts()
-s[:5]
+# pre-processing of keywords
+# expands keywords then flattens them into a column series
+keys_flat = movies_small.apply(lambda x: pd.Series(x['keywords']),axis=1).stack().reset_index(level=1, drop=True)
+keys_flat.name = 'keyword'
+# count keyword frequency
+keys_flat = keys_flat.value_counts()
 
-s = s[s > 1]
+# remove keywords that only occur once
+keys_flat = keys_flat[keys_flat > 1]
 
-# Stemming is a text preprocessing technique in natural language processing (NLP).
-# Specifically, it is the process of reducing inflected form of a word to one
-# so-called “stem,” or root form, also known as a “lemma” in linguistics.
+# apply stemming (normalize text data for nlp task)
 stemmer = SnowballStemmer('english')
 
-def filter_keywords(x):
-    words = []
-    for i in x:
-        if i in s:
-            words.append(i)
-    return words
-smovies['keywords'] = smovies['keywords'].apply(filter_keywords)
-smovies['keywords'] = smovies['keywords'].apply(lambda x: [stemmer.stem(i) for i in x])
-smovies['keywords'] = smovies['keywords'].apply(lambda x: [str.lower(i.replace(" ", "")) for i in x])
+# def filter_keywords(x):
+#     words = []
+#     for i in x:
+#         if i in keys_flat:
+#             words.append(i)
+#     return words
 
-smovies['soup'] = smovies['keywords'] + smovies['cast'] + smovies['director'] + smovies['genres']
+# filter out keywords that only occur once
+# movies_small['keywords'] = movies_small['keywords'].apply(lambda x: [i for i in x if i in keys_flat])
+# movies_small['keywords'] = movies_small['keywords'].apply(lambda x: [stemmer.stem(i) for i in x])
+# movies_small['keywords'] = movies_small['keywords'].apply(lambda x: [str.lower(i.replace(" ", "")) for i in x])
+movies_small['keywords'] = movies_small['keywords'].apply(
+    lambda x: [stemmer.stem(i.replace(" ", "").lower()) for i in x if i in keys_flat]
+)
 
-smovies['soup'] = smovies['soup'].apply(lambda x: ' '.join(x))
+movies_small['soup'] = movies_small['keywords'] + movies_small['cast'] + movies_small['director'] + movies_small['genres']
+
+movies_small['soup'] = movies_small['soup'].apply(lambda x: ' '.join(x))
 
 print("EEEEEEEEEEEEEEEEEEEEEEEE")
 
 count = CountVectorizer(analyzer='word',ngram_range=(1, 2), stop_words='english')
-count_matrix = count.fit_transform(smovies['soup'])
+count_matrix = count.fit_transform(movies_small['soup'])
 #cosine_sim = cosine_similarity(count_matrix, count_matrix)
 cosine_sim = linear_kernel(count_matrix, count_matrix)
 
@@ -145,9 +144,9 @@ cosine_sim = linear_kernel(count_matrix, count_matrix)
 print("OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO")
 
 
-smovies = smovies.reset_index()
-titles = smovies['title']
-indices = pd.Series(smovies.index, index=smovies['title'])
+movies_small = movies_small.reset_index()
+titles = movies_small['title']
+indices = pd.Series(movies_small.index, index=movies_small['title'])
 
 
 
@@ -157,13 +156,13 @@ print("aaaaaaaaaaaaaaaaaaaaaaaaaaa")
 #cosine_sim = linear_kernel(tfidf_matrix, tfidf_matrix)
 
 
-smovies = smovies.reset_index(drop=True)
+movies_small = movies_small.reset_index(drop=True)
 
 # Then recreate the reverse index mapping
-indices = pd.Series(smovies.index, index=smovies['title']).drop_duplicates()
+indices = pd.Series(movies_small.index, index=movies_small['title']).drop_duplicates()
 
 #Construct a reverse map of indices and movie titles
-indices = pd.Series(smovies.index, index=smovies['title']).drop_duplicates()
+indices = pd.Series(movies_small.index, index=movies_small['title']).drop_duplicates()
 
 # Function that takes in movie title as input and outputs most similar movies
 def get_recommendations(title, cosine_sim=cosine_sim):
@@ -183,7 +182,7 @@ def get_recommendations(title, cosine_sim=cosine_sim):
     movie_indices = [i[0] for i in sim_scores]
 
     # Return the top 10 most similar movies
-    return smovies['title'].iloc[movie_indices]
+    return movies_small['title'].iloc[movie_indices]
 
 print(get_recommendations("Harry Potter and the Philosopher's Stone"))
 
