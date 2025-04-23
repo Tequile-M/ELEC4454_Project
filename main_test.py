@@ -174,75 +174,9 @@ def get_recommendations(title, cosine_sim=cosine_sim):
     # Return the top 10 most similar movies
     return movies_small['title'].iloc[movie_indices]
 
-# credits = pd.read_csv('../input/credits.csv')
-# keywords = pd.read_csv('keywords.csv')
+print(get_recommendations("Harry Potter and the Philosopher's Stone"))
 
-# keywords['id'] = keywords['id'].astype('int')
-# credits['id'] = credits['id'].astype('int')
-# md['id'] = md['id'].astype('int')
+# return list of all movies
+def get_movies():
+  return movies_small['title'].tolist()
 
-
-
-
-
-#NOT MINE
-
-# #Replace NaN with an empty string (uses movies overview for vectorization)
-# overview = movies['overview'].fillna('')
-
-# #Construct the required TF-IDF matrix by fitting and transforming the data
-# overview_matrix = vectorizer.fit_transform(overview)
-
-# #Output the shape of tfidf_matrix
-# overview_matrix.shape
-
-
-
-
-# credits = pd.read_csv('credits.csv')
-
-# movies['id'] = pd.to_numeric(movies['id'])
-# db = movies.merge(credits, on="id")
-# db = db.merge(keywords, on="id")
-
-# pd.set_option('display.max_columns', None)
-# print(db.info())
-
-# print(db.shape)
-
-# db.iloc[0].genres
-# db.iloc[0].crew
-
-# # # Parse the stringified features into their corresponding python objects
-# from ast import literal_eval
-
-# def extract(obj, feat):
-#   return [i[feat] for i in literal_eval(obj)]
-
-# def extract_director(obj):
-#   return [i['name'] for i in literal_eval(obj) if i['job'] == 'Director']
-
-# # Extract 'name' from keywords and genres
-# # for col in ['keywords', 'genres']:
-# #     db[col] = db[col].apply(lambda x: extract(x, 'name'))
-
-# db['crew'] = db['crew'].apply(extract_director)
-
-# db.iloc[0].crew
-
-# # movies['id'] = pd.to_numeric(movies['id'])
-
-# #get ratingsdatabase
-# ratings = pd.read_csv('ratings.csv')
-
-# print(ratings.head())
-
-# print("*********************************************************************************")
-
-# #rate_pivot = ratings.pivot_table(values='rating',columns='userId',index='movieId')
-
-
-# # plot
-# # director
-# # crew
-# # keywords
