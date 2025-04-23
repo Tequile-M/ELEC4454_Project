@@ -10,3 +10,12 @@ pip install surprise
 train_recommender.py: builds and trains the system  
 run_recommender.py: uses model built in train_recommender to output predictions  
 app.py: holds the front-end content to display movie recommender  
+
+
+# To run app
+cd into ELECT4454_PROJECT folder  
+run "streamlit run app.py"  
+open link that it provides
+
+# demo
+<video controls src="Recording.mp4" title="Title"></video>
