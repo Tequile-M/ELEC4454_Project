@@ -25,7 +25,7 @@ GET DATA
 
 def svd_func():
    # Load ratings and prepare Surprise dataset
-    ratings = pd.read_csv('/kaggle/input/the-movies-dataset/ratings_small.csv')
+    ratings = pd.read_csv('ratings_small.csv')
     reader  = Reader(rating_scale=(ratings.rating.min(), ratings.rating.max()))
     data    = Dataset.load_from_df(ratings[['userId','movieId','rating']], reader)
 
@@ -66,7 +66,12 @@ def load_data():
   return movies_small
 
 movies_small = load_data()
+
+# Initialise svd
 svd = svd_func()
+
+# 3. Build candidates DataFrame for user_id recommender
+candidates = pd.DataFrame()
 
 # get director name from crew data
 def extract_director(obj):
@@ -172,8 +177,15 @@ def get_recommendations_hybrid(title, cosine_sim, moveies_small, indices, userId
     candidate_idxs = [i for i, _ in sim_scores]
 
     # 3. Build candidates DataFrame
-    candidates = movies_small.iloc[candidate_idxs][['title','vote_count','vote_average','year','id']].copy()
+    candidates = movies_small.iloc[candidate_idxs][['title','vote_count','vote_average','id']].copy()
 
+    # Convert the TMDb 'id' column to numeric, invalid entries become NaN
+    movies_small['id'] = pd.to_numeric(movies_small['id'], errors='coerce')
+
+    # Assign a new 'movieId' based on the DataFrame index + 1 (1-based indexing)
+    movies_small['movieId'] = movies_small.index + 1
+
+    # Create a simple mapping DataFrame for title ↔ movieId ↔ TMDb id
     # Build helper lookup tables
     id_to_title = movies_small[['title', 'movieId', 'id']].set_index('id')          # TMDb id → title, movieId
 
@@ -191,10 +203,20 @@ def get_recommendations_hybrid(title, cosine_sim, moveies_small, indices, userId
 def get_movies():
   return movies_small['title'].tolist()
 
+user_id = 5
+
+def get_user_id():
+   return user_id
+
+def get_movies_hybrid():
+   return candidates['title'].tolist()
+
 if __name__ == "__main__":
   ms = load_data()
   ms, cosine, indices = preprocess_data(ms)
-  title = "Harry Potter and the Philosopher's Stone"
+  title = "Frozen"
   recs = get_recommendations(title, cosine, ms, indices)
   print(recs)
-  display(get_recommendations_hybrid(1, 'Avatar'))
+  print("REAL TEST\n")
+  #print((get_recommendations_hybrid(1, 'Avatar')))
+  print((get_recommendations_hybrid('Avatar', cosine, ms, indices, 5)))
