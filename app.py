@@ -14,10 +14,6 @@ class Movie:
     overview: str = "No overview available."
     year: int = None
 
-
-# imdb_id= 'tt0113497'
-# movies_imdb = ['tt0113497', 'tt0113228', 'tt0114885', 'tt0113041']
-
 tmdb_ids = []
 
 #
@@ -31,7 +27,8 @@ def fetch_from_tmdb(movie_id):
 
     headers = {
         "accept": "application/json",
-        "Authorization": "Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI0MzFhOGJjM2E4MjU1MTJjODIwNDkwZDFjYmE5MzVlNiIsIm5iZiI6MTc0NTIxMjU4MC4zMTIsInN1YiI6IjY4MDVkNGE0YzVjODAzNWZiMDhhMDcyMyIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.CaQ8Fz7c1aTSbzaOjK4eqFsFOqM9oxkPNQ9W303Z5vA"
+        # get key from tmdb for api access and put here or in env variable file
+        "Authorization": ""
     }
 
     response = requests.get(movie_url, headers=headers)
